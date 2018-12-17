@@ -5,7 +5,7 @@ by a Knative Service.
 
 ## Deployment Steps
 
-We should be able to reproduce the [GitHub workflow](https://github.com/knative/docs/blob/master/eventing/samples/github-source/README.md).
+We should be able to reproduce the [GitHub workflow](https://github.com/knative/docs/blob/master/eventing/samples/github-source/README.md). The following was taken from the knative upstream docs for GitHub.
 
 ### Create a Knative Service
 
