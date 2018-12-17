@@ -29,8 +29,7 @@ spec:
 Enter the following command to create the service from `service.yaml`:
 
 ```shell
-kubectl --namespace default apply --filename eventing/samples/github-source/service.yaml
-```
+kubectl -n default apply -f https://gitlab.com/triggermesh/gitlabsource/raw/master/message-dumper.yaml
 
 ### Create GitLab Tokens
 
@@ -68,7 +67,7 @@ head -c 8 /dev/urandom | base64
 Then, apply the gitlabsecret using `kubectl`:
 
 ```shell
-kubectl --namespace default apply --filename 
+kubectl --n default apply -f https://gitlab.com/triggermesh/gitlabsource/raw/master/gitlabsecret.yaml
 ```
 
 ### Create Event Source for GitLab Events
@@ -104,7 +103,7 @@ spec:
 Then, apply that yaml using `kubectl`:
 
 ```shell
-kubectl --namespace default apply --filename 
+kubectl -n default apply -f https://gitlab.com/triggermesh/gitlabsource/raw/master/gitlabeventbinding.yaml
 ```
 
 ### Verify
