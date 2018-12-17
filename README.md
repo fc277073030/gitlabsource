@@ -37,8 +37,10 @@ kubectl -n default apply -f https://gitlab.com/triggermesh/gitlabsource/raw/mast
 Create a [personal access token](https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html)
 for GitLab that the GitLab source can use to register webhooks with
 the GitLab API. Also decide on a secret token that your code will use
-to authenticate the incoming webhooks from GitHub (_secretToken_).
-  
+to authenticate the incoming webhooks from GitLab ([_secretToken_](https://docs.gitlab.com/ee/user/project/integrations/webhooks.html#secret-token)).
+
+GitLab webhooks can be created and configured with the [Hook API](https://docs.gitlab.com/ee/api/projects.html#hooks)
+
 Here's an example for a token named "knative-test" with the
 recommended scopes:
 
@@ -46,7 +48,7 @@ recommended scopes:
 
 Update `gitlabsecret.yaml` with those values. If your generated access
 token is `'personal_access_token_value'` and you choose your _secretToken_
-as `'asdfasfdsaf'`, you'd modify `githubsecret.yaml` like so:
+as `'asdfasfdsaf'`, you'd modify `gitlabsecret.yaml` like so:
 
 ```yaml
 apiVersion: v1
