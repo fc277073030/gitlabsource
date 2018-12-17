@@ -30,6 +30,7 @@ Enter the following command to create the service from `service.yaml`:
 
 ```shell
 kubectl -n default apply -f https://gitlab.com/triggermesh/gitlabsource/raw/master/message-dumper.yaml
+```
 
 ### Create GitLab Tokens
 
