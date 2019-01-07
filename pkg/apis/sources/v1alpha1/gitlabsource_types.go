@@ -77,6 +77,11 @@ type GitLabSourceStatus struct {
 	SinkURI string `json:"sinkUri,omitempty"`
 }
 
+// MarkSink sets the sink fot GitLabSource
+func (s *GitLabSourceStatus) MarkSink(uri string) {
+	s.SinkURI = uri
+}
+
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 

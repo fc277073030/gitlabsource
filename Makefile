@@ -1,5 +1,6 @@
 # Image URL to use all building/pushing image targets
 IMG ?= registry.gitlab.com/triggermesh/gitlabsource/controller:latest
+RA_IMG ?= gcr.io/triggermesh/gitlab-receive-adapter:latest
 
 all: test manager
 
@@ -46,6 +47,13 @@ docker-build: test
 	@echo "updating kustomize image patch file for manager resource"
 	sed -i'' -e 's@image: .*@image: '"${IMG}"'@' ./config/default/manager_image_patch.yaml
 
-# Push the docker image
+# Build the recieve adapater image
+docker-build-ra: test
+	docker build . -f Dockerfile.receive_adapter -t ${RA_IMG}
+
+# Push the manager docker image
 docker-push:
 	docker push ${IMG}
+
+docker-push-ra:
+	docker push ${RA_IMG}
