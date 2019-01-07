@@ -1,6 +1,5 @@
-
 # Image URL to use all building/pushing image targets
-IMG ?= gcr.io/triggermesh/gitlabeventing:latest
+IMG ?= registry.gitlab.com/triggermesh/gitlabsource/controller:latest
 
 all: test manager
 
