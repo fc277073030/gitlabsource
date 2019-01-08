@@ -19,13 +19,17 @@ package gitlabsource
 import (
 	"context"
 	"fmt"
+	"os"
 
+	"github.com/knative/pkg/apis/duck"
+	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
 	servingv1alpha1 "github.com/knative/serving/pkg/apis/serving/v1alpha1"
 	sourcesv1alpha1 "gitlab.com/triggermesh/gitlabsource/pkg/apis/sources/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -42,19 +46,26 @@ import (
 const (
 	controllerAgentName = "gitlab-source-controller"
 	finalizerName       = controllerAgentName
+	raImageEnvVar       = "GL_RA_IMAGE"
 )
 
 var log = logf.Log.WithName("controller")
+var receiveAdapterImage string
 
 // Add creates a new GitLabSource Controller and adds it to the Manager with default RBAC. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
 func Add(mgr manager.Manager) error {
+	var defined bool
+	receiveAdapterImage, defined = os.LookupEnv(raImageEnvVar)
+	if !defined {
+		return fmt.Errorf("required environment variable %q not defined", raImageEnvVar)
+	}
 	return add(mgr, newReconciler(mgr))
 }
 
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	return &ReconcileGitLabSource{Client: mgr.GetClient(), scheme: mgr.GetScheme()}
+	return &ReconcileGitLabSource{Client: mgr.GetClient(), scheme: mgr.GetScheme(), receiveAdapterImage: receiveAdapterImage}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
@@ -95,6 +106,7 @@ type ReconcileGitLabSource struct {
 // +kubebuilder:rbac:groups=sources.eventing.triggermesh.dev,resources=gitlabsources/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=serving.knative.dev,resources=services,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=core,resources=secrets,verbs=get;list;watch
+// +kubebuilder:rbac:groups=eventing.knative.dev,resources=channels,verbs=get;list;watch
 func (r *ReconcileGitLabSource) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 	ctx := context.TODO()
 
@@ -134,7 +146,6 @@ func (r *ReconcileGitLabSource) reconcile(source *sourcesv1alpha1.GitLabSource) 
 	ctx := context.TODO()
 	hookOptions := projectHookOptions{}
 	hookOptions.project = source.Spec.OwnerAndRepository
-	hookOptions.url = "http://google.com"
 	hookOptions.id = source.Status.Id
 
 	for _, event := range source.Spec.EventTypes {
@@ -168,6 +179,13 @@ func (r *ReconcileGitLabSource) reconcile(source *sourcesv1alpha1.GitLabSource) 
 	if err != nil {
 		return err
 	}
+
+	uri, err := r.getSinkURI(source.Spec.Sink, source.Namespace)
+	if err != nil {
+		return err
+	}
+	source.Status.MarkSink(uri)
+	hookOptions.url = uri
 
 	_, err = r.getOwnedKnativeService(source)
 	if err != nil {
@@ -311,4 +329,36 @@ func (r *ReconcileGitLabSource) getOwnedKnativeService(source *sourcesv1alpha1.G
 	}
 
 	return nil, apierrors.NewNotFound(servingv1alpha1.Resource("services"), "")
+}
+
+func (r *ReconcileGitLabSource) getSinkURI(sink *corev1.ObjectReference, namespace string) (string, error) {
+
+	ctx := context.TODO()
+
+	if sink == nil {
+		return "", fmt.Errorf("sink ref is nil")
+	}
+
+	u := &unstructured.Unstructured{}
+	u.SetGroupVersionKind(sink.GroupVersionKind())
+	err := r.Get(ctx, client.ObjectKey{Namespace: namespace, Name: sink.Name}, u)
+	if err != nil {
+		return "", err
+	}
+
+	t := duckv1alpha1.AddressableType{}
+	err = duck.FromUnstructured(u, &t)
+	if err != nil {
+		return "", fmt.Errorf("failed to deserialize sink: %v", err)
+	}
+
+	if t.Status.Address == nil {
+		return "", fmt.Errorf("sink does not contain address")
+	}
+
+	if t.Status.Address.Hostname == "" {
+		return "", fmt.Errorf("sink contains an empty hostname")
+	}
+
+	return fmt.Sprintf("http://%s/", t.Status.Address.Hostname), nil
 }

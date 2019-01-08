@@ -11,7 +11,7 @@ COPY vendor/ vendor/
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o manager gitlab.com/triggermesh/gitlabsource/cmd/manager
 
 # Copy the controller-manager into a thin image
-FROM ubuntu:latest
+FROM debian:latest
 RUN apt-get update
 RUN apt-get install -y ca-certificates
 WORKDIR /

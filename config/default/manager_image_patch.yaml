@@ -10,3 +10,6 @@ spec:
       # Change the value of image field below to your controller image URL
       - image: muralireddy/gitlab-controller
         name: manager
+        env:
+        - name: GL_RA_IMAGE
+          value: muralireddy/gitlab_receive_adapter
