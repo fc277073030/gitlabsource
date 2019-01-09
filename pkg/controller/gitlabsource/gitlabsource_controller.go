@@ -185,12 +185,11 @@ func (r *ReconcileGitLabSource) reconcile(source *sourcesv1alpha1.GitLabSource) 
 		return err
 	}
 	source.Status.MarkSink(uri)
-	hookOptions.url = uri
 
-	_, err = r.getOwnedKnativeService(source)
+	ksvc, err := r.getOwnedKnativeService(source)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			ksvc := r.generateKnativeServiceObject(source, r.receiveAdapterImage)
+			ksvc = r.generateKnativeServiceObject(source, r.receiveAdapterImage)
 			if err = controllerutil.SetControllerReference(source, ksvc, r.scheme); err != nil {
 				return fmt.Errorf("Failed to create knative service for the gitlabsource: " + err.Error())
 			}
@@ -201,6 +200,7 @@ func (r *ReconcileGitLabSource) reconcile(source *sourcesv1alpha1.GitLabSource) 
 		return fmt.Errorf("Failed to verify if knative service is created for the gitlabsource: " + err.Error())
 	}
 
+	hookOptions.url = ksvc.Status.Domain
 	gitlabClient := gitlabHookClient{}
 	hookId, err := gitlabClient.Create(&hookOptions)
 	if err != nil {
