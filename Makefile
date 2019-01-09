@@ -1,6 +1,6 @@
 # Image URL to use all building/pushing image targets
 IMG ?= registry.gitlab.com/triggermesh/gitlabsource/controller:latest
-RA_IMG ?= gcr.io/triggermesh/gitlab-receive-adapter:latest
+RA_IMG ?= registry.gitlab.com/triggermesh/gitlabsource/gitlab-receive-adapter:latest
 
 all: test manager
 
