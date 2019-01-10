@@ -79,6 +79,7 @@ func (client gitlabHookClient) Create(options *projectHookOptions) (string, erro
 		JobEvents:                &options.JobEvents,
 		PipelineEvents:           &options.PipelineEvents,
 		WikiPageEvents:           &options.WikiPageEvents,
+		Token:                    &options.secretToken,
 	}
 
 	hook, _, err := glClient.Projects.AddProjectHook(options.project, &hookOptions, nil)
