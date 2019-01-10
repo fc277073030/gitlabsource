@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/knative/pkg/apis/duck"
 	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
@@ -82,7 +83,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
-	err = c.Watch(&source.Kind{Type: &servingv1alpha1.Service{}}, &handler.EnqueueRequestForObject{})
+	err = c.Watch(&source.Kind{Type: &servingv1alpha1.Service{}}, &handler.EnqueueRequestForOwner{OwnerType: &servingv1alpha1.Service{}, IsController: true})
 	if err != nil {
 		return err
 	}
@@ -185,22 +186,27 @@ func (r *ReconcileGitLabSource) reconcile(source *sourcesv1alpha1.GitLabSource) 
 		return err
 	}
 	source.Status.MarkSink(uri)
-	hookOptions.url = uri
 
-	_, err = r.getOwnedKnativeService(source)
+	ksvc, err := r.getOwnedKnativeService(source)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			ksvc := r.generateKnativeServiceObject(source, r.receiveAdapterImage)
+			ksvc = r.generateKnativeServiceObject(source, r.receiveAdapterImage)
 			if err = controllerutil.SetControllerReference(source, ksvc, r.scheme); err != nil {
 				return fmt.Errorf("Failed to create knative service for the gitlabsource: " + err.Error())
 			}
 			if err = r.Create(ctx, ksvc); err != nil {
-				return err
+				return nil
 			}
+		} else {
+			return fmt.Errorf("Failed to verify if knative service is created for the gitlabsource: " + err.Error())
 		}
-		return fmt.Errorf("Failed to verify if knative service is created for the gitlabsource: " + err.Error())
 	}
 
+	ksvc, err = r.waitForKnativeServiceReady(source)
+	if err != nil {
+		return err
+	}
+	hookOptions.url = "https://" + ksvc.Status.Domain
 	gitlabClient := gitlabHookClient{}
 	hookId, err := gitlabClient.Create(&hookOptions)
 	if err != nil {
@@ -329,6 +335,22 @@ func (r *ReconcileGitLabSource) getOwnedKnativeService(source *sourcesv1alpha1.G
 	}
 
 	return nil, apierrors.NewNotFound(servingv1alpha1.Resource("services"), "")
+}
+
+func (r *ReconcileGitLabSource) waitForKnativeServiceReady(source *sourcesv1alpha1.GitLabSource) (*servingv1alpha1.Service, error) {
+	for attempts := 0; attempts < 4; attempts++ {
+		ksvc, err := r.getOwnedKnativeService(source)
+		if err != nil {
+			return nil, err
+		}
+		routeCondition := ksvc.Status.GetCondition(servingv1alpha1.ServiceConditionRoutesReady)
+		receiveAdapterDomain := ksvc.Status.Domain
+		if routeCondition != nil && routeCondition.Status == corev1.ConditionTrue && receiveAdapterDomain != "" {
+			return ksvc, nil
+		}
+		time.Sleep(2000 * time.Millisecond)
+	}
+	return nil, fmt.Errorf("Failed to get service to be in ready state")
 }
 
 func (r *ReconcileGitLabSource) getSinkURI(sink *corev1.ObjectReference, namespace string) (string, error) {
