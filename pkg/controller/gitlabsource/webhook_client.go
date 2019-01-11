@@ -38,6 +38,7 @@ type projectHookOptions struct {
 	JobEvents                bool
 	PipelineEvents           bool
 	WikiPageEvents           bool
+	EnableSSLVerification    bool
 }
 
 type projectHookClient interface {
@@ -80,6 +81,7 @@ func (client gitlabHookClient) Create(options *projectHookOptions) (string, erro
 		PipelineEvents:           &options.PipelineEvents,
 		WikiPageEvents:           &options.WikiPageEvents,
 		Token:                    &options.secretToken,
+		EnableSSLVerification:    &options.EnableSSLVerification,
 	}
 
 	hook, _, err := glClient.Projects.AddProjectHook(options.project, &hookOptions, nil)
