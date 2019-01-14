@@ -3,14 +3,39 @@
 GitLab Source example shows how to wire GitLab events for consumption
 by a Knative Service.
 
-## Deployment Steps
+## Step by Step
 
-We should be able to reproduce the [GitHub workflow](https://github.com/knative/docs/blob/master/eventing/samples/github-source/README.md). The following was taken from the knative upstream docs for GitHub.
+
+### Deploy the GitLab source
+
+```shell
+wget -O release.yaml https://gitlab.com/triggermesh/gitlabsource/-/jobs/artifacts/master/raw/release.yaml?job=manifests
+kubectl apply -f release.yaml
+namespace "gitlabsource-system" created
+clusterrole.rbac.authorization.k8s.io "gitlabsource-manager-role" created
+clusterrole.rbac.authorization.k8s.io "gitlabsource-proxy-role" created
+clusterrolebinding.rbac.authorization.k8s.io "gitlabsource-manager-rolebinding" created
+clusterrolebinding.rbac.authorization.k8s.io "gitlabsource-proxy-rolebinding" created
+secret "gitlabsource-webhook-server-secret" created
+service "gitlabsource-controller-manager-metrics-service" created
+service "gitlabsource-controller-manager-service" created
+statefulset.apps "gitlabsource-controller-manager" created
+```
+
+At this point you have installed the GitLab Eventing source in your Knative cluster. Check that the manager is running with:
+
+```shell
+kubectl get pods -n gitlabsource-system
+NAME                                READY     STATUS    RESTARTS   AGE
+gitlabsource-controller-manager-0   2/2       Running   0          27s
+```
 
 ### Create a Knative Service
 
 Create a simple Knative `Service` that dumps incoming messages to its log. The `service.yaml` file
 defines this basic service.
+
+This service will receive the GitLab event that you will configure in the GitLabSource object.
 
 ```yaml
 apiVersion: serving.knative.dev/v1alpha1
@@ -115,19 +140,5 @@ Verify the GitLab webhook was created by looking at the list of
 webhooks under the Settings/Integrations tab in your GitLab repository. A hook
 should be listed that points to your Knative cluster.
 
-### Create Events
+Create a push event and check the logs of the Pod backing the `message-dumper`. You will see the GitLab event.
 
-Create a pull request in your Gitlab repository. We will verify
-that the Gitlab events were sent into the Knative eventing system
-by looking at our message dumper function logs.
-
-```shell
-kubectl --namespace default get pods
-kubectl --namespace default logs gitlab-message-dumper-XXXX user-container
-```
-
-You should log lines similar to:
-
-```
-...
-```
