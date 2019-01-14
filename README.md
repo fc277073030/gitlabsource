@@ -125,7 +125,7 @@ spec:
   sink:
     apiVersion: serving.knative.dev/v1alpha1
     kind: Service
-    name: github-message-dumper
+    name: gitlab-message-dumper
 ```
 
 Then, apply that yaml using `kubectl`:
