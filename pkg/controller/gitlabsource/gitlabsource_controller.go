@@ -206,7 +206,12 @@ func (r *ReconcileGitLabSource) reconcile(source *sourcesv1alpha1.GitLabSource) 
 	if err != nil {
 		return err
 	}
-	hookOptions.url = "https://" + ksvc.Status.Domain
+	if source.Spec.SslVerify {
+		hookOptions.url = "https://" + ksvc.Status.Domain
+		hookOptions.EnableSSLVerification = true
+	} else {
+		hookOptions.url = "http://" + ksvc.Status.Domain
+	}
 	gitlabClient := gitlabHookClient{}
 	hookId, err := gitlabClient.Create(&hookOptions)
 	if err != nil {
