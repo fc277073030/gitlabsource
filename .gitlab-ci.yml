@@ -27,8 +27,9 @@ manifests:
   stage: manifests
   image:
     name: gcr.io/triggermesh/kustomize
+    entrypoint: [""]
   script:
-    - build config/default > release.yaml
+    - kustomize build config/default > release.yaml
   artifacts:
     paths:
     - release.yaml
