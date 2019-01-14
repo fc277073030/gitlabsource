@@ -20,4 +20,4 @@ receiver:
     entrypoint: [""]
   script:
     - /busybox/echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_JOB_TOKEN\"}}}" > /kaniko/.docker/config.json
-    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile.receive_adapter --destination $CI_REGISTRY_IMAGE/receive_adapter:$CI_COMMIT_TAG
+    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile.receive_adapter --destination $CI_REGISTRY_IMAGE/receive-adapter:$CI_COMMIT_TAG
