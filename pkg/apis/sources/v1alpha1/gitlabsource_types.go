@@ -54,6 +54,9 @@ type GitLabSourceSpec struct {
 	// secret token
 	SecretToken SecretValueFromSource `json:"secretToken"`
 
+	// SslVerify if true configure webhook so the ssl verification is done when triggering the hook
+	SslVerify bool `json:"sslverify,omitempty"`
+
 	// Sink is a reference to an object that will resolve to a domain
 	// name to use as the sink.
 	// +optional
