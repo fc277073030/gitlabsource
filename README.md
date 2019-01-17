@@ -3,14 +3,32 @@
 GitLab Source example shows how to wire GitLab events for consumption
 by a Knative Service.
 
-## Step by Step
+## Deploy the GitLab source controller
 
+You will need to do two things:
 
-### Deploy the GitLab source
+* Create a new kind of API by creating a Custom Resource Definiton Object that defines what a GitLabSource is
+* Deploy the controller which watches GitLabSource objects and creates GitLab webhook.
+
+Usually these steps are performed by a Cluster admin as you need to have the Kubernetes `cluster-admin` role.
+
+Let's create the new API definition:
+
+```shell
+kubectl apply -f https://gitlab.com/triggermesh/gitlabsource/raw/master/config/crds/sources_v1alpha1_gitlabsource.yaml
+```
+
+And now we can launch the controller and set all the required objects.
+
 
 ```shell
 wget -O release.yaml https://gitlab.com/triggermesh/gitlabsource/-/jobs/artifacts/master/raw/release.yaml?job=manifests
 kubectl apply -f release.yaml
+```
+
+If the deployment goes well you should see the same output as below:
+
+```
 namespace "gitlabsource-system" created
 clusterrole.rbac.authorization.k8s.io "gitlabsource-manager-role" created
 clusterrole.rbac.authorization.k8s.io "gitlabsource-proxy-role" created
@@ -29,6 +47,18 @@ kubectl get pods -n gitlabsource-system
 NAME                                READY     STATUS    RESTARTS   AGE
 gitlabsource-controller-manager-0   2/2       Running   0          27s
 ```
+
+With the controller running you can now move on to a user persona and setup a GitLab webhook as well as a function that will consume GitLab events.
+
+## Using the GitLab Event Source
+
+You are now ready to use the Source and trigger functions based on GitLab projects events.
+
+We will:
+
+* Create a Knative service which will receive the events. To keep things simple this service will simply dump the events to `stdout`, this is the so-called: _message_dumper_
+* Create a GitLab access token and a random secret token used to secure the webhooks.
+* Create the event source by posting a GitLab source object manifest to Kubernetes
 
 ### Create a Knative Service
 
