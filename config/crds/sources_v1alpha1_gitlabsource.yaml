@@ -43,7 +43,7 @@ spec:
                 type: string
               minItems: 1
               type: array
-            ownerAndRepository:
+            projectUrl:
               minLength: 1
               type: string
             secretToken:
@@ -58,7 +58,7 @@ spec:
             sslverify:
               type: boolean
           required:
-          - ownerAndRepository
+          - projectUrl
           - eventTypes
           - accessToken
           - secretToken

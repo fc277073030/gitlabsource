@@ -8,7 +8,7 @@ spec:
     spec:
       containers:
       # Change the value of image field below to your controller image URL
-      - image: registry.gitlab.com/triggermesh/gitlabsource/manager:latest
+      - image: registry.gitlab.com/triggermesh/gitlabsource/controller:latest
         name: manager
         env:
         - name: GL_RA_IMAGE
