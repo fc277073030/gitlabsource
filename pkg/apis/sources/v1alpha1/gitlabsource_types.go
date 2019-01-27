@@ -30,14 +30,12 @@ type GitLabSourceSpec struct {
 	// +optional
 	ServiceAccountName string `json:"serviceAccountName,omitempty"`
 
-	// OwnerAndRepository is the GitLab owner/org and repository to
-	// receive events from. The repository may be left off to receive
-	// events from an entire organization.
+	// ProjectUrl is the url of the GitLab project for which we are interested
+	// to receive events from.
 	// Examples:
-	//  myuser/project
-	//  myorganization
+	//   https://gitlab.com/triggermesh/gitlabsource
 	// +kubebuilder:validation:MinLength=1
-	OwnerAndRepository string `json:"ownerAndRepository"`
+	ProjectUrl string `json:"projectUrl"`
 
 	// EventType is the type of event to receive from Gitlab. These
 	// correspond to supported events to the add project hook

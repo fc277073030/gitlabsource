@@ -20,7 +20,7 @@ spec:
   eventTypes:
   - push_events
   - issues_events
-  ownerAndRepository: "murali-reddy/gitlabsource"
+  projectUrl: "https://gitlab.com/murali-reddy/gitlabsource"
   accessToken:
     secretKeyRef:
       name: gitlabsecret

@@ -19,7 +19,9 @@ package gitlabsource
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/knative/pkg/apis/duck"
@@ -142,11 +144,34 @@ func (r *ReconcileGitLabSource) Reconcile(request reconcile.Request) (reconcile.
 	return reconcile.Result{}, reconcileErr
 }
 
+func getGitlabBaseUrl(projectUrl string) (string, error) {
+	u, err := url.Parse(projectUrl)
+	if err != nil {
+		return "", err
+	}
+	projectName := u.Path[1:]
+	baseurl := strings.TrimSuffix(projectUrl, projectName)
+	return baseurl, nil
+}
+
+func getProjectName(projectUrl string) (string, error) {
+	u, err := url.Parse(projectUrl)
+	if err != nil {
+		return "", err
+	}
+	projectName := u.Path[1:]
+	return projectName, nil
+}
+
 func (r *ReconcileGitLabSource) reconcile(source *sourcesv1alpha1.GitLabSource) error {
 
 	ctx := context.TODO()
 	hookOptions := projectHookOptions{}
-	hookOptions.project = source.Spec.OwnerAndRepository
+	projectName, err := getProjectName(source.Spec.ProjectUrl)
+	if err != nil {
+		return fmt.Errorf("Failed to process project url to get the project name: " + err.Error())
+	}
+	hookOptions.project = projectName
 	hookOptions.id = source.Status.Id
 
 	for _, event := range source.Spec.EventTypes {
@@ -171,7 +196,6 @@ func (r *ReconcileGitLabSource) reconcile(source *sourcesv1alpha1.GitLabSource) 
 			hookOptions.NoteEvents = true
 		}
 	}
-	var err error
 	hookOptions.accessToken, err = r.secretFrom(source.Namespace, source.Spec.AccessToken.SecretKeyRef)
 	if err != nil {
 		return err
@@ -212,8 +236,13 @@ func (r *ReconcileGitLabSource) reconcile(source *sourcesv1alpha1.GitLabSource) 
 	} else {
 		hookOptions.url = "http://" + ksvc.Status.Domain
 	}
+
+	baseUrl, err := getGitlabBaseUrl(source.Spec.ProjectUrl)
+	if err != nil {
+		return fmt.Errorf("Failed to process project url to get the base url: " + err.Error())
+	}
 	gitlabClient := gitlabHookClient{}
-	hookId, err := gitlabClient.Create(&hookOptions)
+	hookId, err := gitlabClient.Create(baseUrl, &hookOptions)
 	if err != nil {
 		return fmt.Errorf("Failed to create project hook: " + err.Error())
 	}
@@ -225,16 +254,23 @@ func (r *ReconcileGitLabSource) reconcile(source *sourcesv1alpha1.GitLabSource) 
 func (r *ReconcileGitLabSource) finalize(source *sourcesv1alpha1.GitLabSource) error {
 
 	hookOptions := projectHookOptions{}
-	hookOptions.project = source.Spec.OwnerAndRepository
+	projectName, err := getProjectName(source.Spec.ProjectUrl)
+	if err != nil {
+		return fmt.Errorf("Failed to process project url to get the project name: " + err.Error())
+	}
+	hookOptions.project = projectName
 	hookOptions.id = source.Status.Id
-	var err error
 	hookOptions.accessToken, err = r.secretFrom(source.Namespace, source.Spec.AccessToken.SecretKeyRef)
 	if err != nil {
 		return err
 	}
 
+	baseUrl, err := getGitlabBaseUrl(source.Spec.ProjectUrl)
+	if err != nil {
+		return fmt.Errorf("Failed to process project url to get the base url: " + err.Error())
+	}
 	gitlabClient := gitlabHookClient{}
-	err = gitlabClient.Delete(&hookOptions)
+	err = gitlabClient.Delete(baseUrl, &hookOptions)
 	if err != nil {
 		return fmt.Errorf("Failed to delete project hook: " + err.Error())
 	}

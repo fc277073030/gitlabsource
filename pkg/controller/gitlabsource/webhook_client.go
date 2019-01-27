@@ -48,9 +48,10 @@ type projectHookClient interface {
 
 type gitlabHookClient struct{}
 
-func (client gitlabHookClient) Create(options *projectHookOptions) (string, error) {
+func (client gitlabHookClient) Create(baseUrl string, options *projectHookOptions) (string, error) {
 
 	glClient := gitlab.NewClient(nil, options.accessToken)
+	glClient.SetBaseURL(baseUrl)
 
 	if options.id != "" {
 		hookId, err := strconv.Atoi(options.id)
@@ -59,7 +60,7 @@ func (client gitlabHookClient) Create(options *projectHookOptions) (string, erro
 		}
 		projhooks, _, err := glClient.Projects.ListProjectHooks(options.project, nil, nil)
 		if err != nil {
-			return "", fmt.Errorf("Failed to list project hooks for project: " + options.project)
+			return "", fmt.Errorf("Failed to list project hooks for project:" + options.project + " due to" + err.Error())
 		} else {
 			for _, hook := range projhooks {
 				if hook.ID == hookId {
@@ -92,13 +93,14 @@ func (client gitlabHookClient) Create(options *projectHookOptions) (string, erro
 	return strconv.Itoa(hook.ID), nil
 }
 
-func (client gitlabHookClient) Delete(options *projectHookOptions) error {
+func (client gitlabHookClient) Delete(baseUrl string, options *projectHookOptions) error {
 	if options.id != "" {
 		hookId, err := strconv.Atoi(options.id)
 		if err != nil {
 			return fmt.Errorf("failed to convert hook id to int: " + err.Error())
 		}
 		glClient := gitlab.NewClient(nil, options.accessToken)
+		glClient.SetBaseURL(baseUrl)
 
 		projhooks, _, err := glClient.Projects.ListProjectHooks(options.project, nil, nil)
 		if err != nil {
