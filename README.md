@@ -3,56 +3,64 @@
 GitLab Source example shows how to wire GitLab events for consumption
 by a Knative Service.
 
+> **NOTE:** It is recommended that you clone this repository in order to apply the necessary files with custom values. You can optionally also create individual files for each step that requires it.
+
 ## Deploy the GitLab source controller
 
-You will need to do two things:
+You will need to:
 
-* Create a new kind of API by creating a Custom Resource Definiton Object that defines what a GitLabSource is
-* Deploy the controller which watches GitLabSource objects and creates GitLab webhook.
+* Create a new API by creating a Custom Resource Definiton (CRD) object that defines `GitLabSource`
+* Deploy the controller which watches `GitLabSource` objects and creates a GitLab webhook.
 
-Usually these steps are performed by a Cluster admin as you need to have the Kubernetes `cluster-admin` role.
+> **NOTE:** The Kubernetes `cluster-admin` role is required to perform these steps.
 
-Let's create the new API definition:
+1. Create the new API definition:
 
-```shell
-kubectl apply -f https://gitlab.com/triggermesh/gitlabsource/raw/master/config/crds/sources_v1alpha1_gitlabsource.yaml
-```
+    ```shell
+    kubectl apply -f https://gitlab.com/triggermesh/gitlabsource/raw/master/config/crds/sources_v1alpha1_gitlabsource.yaml
+    ```
 
-And now we can launch the controller and set all the required objects.
+2. Launch the controller and set all the required objects:
 
+    ```shell
+    wget -O release.yaml https://gitlab.com/triggermesh/gitlabsource/-/jobs/artifacts/master/raw/release.yaml?job=manifests
+    kubectl apply -f release.yaml
+    ```
 
-```shell
-wget -O release.yaml https://gitlab.com/triggermesh/gitlabsource/-/jobs/artifacts/master/raw/release.yaml?job=manifests
-kubectl apply -f release.yaml
-```
+    If the deployment goes well you should see the following output:
 
-If the deployment goes well you should see the same output as below:
+    ```
+    namespace "gitlabsource-system" created
+    clusterrole.rbac.authorization.k8s.io "gitlabsource-manager-role" created
+    clusterrole.rbac.authorization.k8s.io "gitlabsource-proxy-role" created
+    clusterrolebinding.rbac.authorization.k8s.io "gitlabsource-manager-rolebinding" created
+    clusterrolebinding.rbac.authorization.k8s.io "gitlabsource-proxy-rolebinding" created
+    secret "gitlabsource-webhook-server-secret" created
+    service "gitlabsource-controller-manager-metrics-service" created
+    service "gitlabsource-controller-manager-service" created
+    statefulset.apps "gitlabsource-controller-manager" created
+    ```
 
-```
-namespace "gitlabsource-system" created
-clusterrole.rbac.authorization.k8s.io "gitlabsource-manager-role" created
-clusterrole.rbac.authorization.k8s.io "gitlabsource-proxy-role" created
-clusterrolebinding.rbac.authorization.k8s.io "gitlabsource-manager-rolebinding" created
-clusterrolebinding.rbac.authorization.k8s.io "gitlabsource-proxy-rolebinding" created
-secret "gitlabsource-webhook-server-secret" created
-service "gitlabsource-controller-manager-metrics-service" created
-service "gitlabsource-controller-manager-service" created
-statefulset.apps "gitlabsource-controller-manager" created
-```
+    At this point you have installed the GitLab Eventing source in your Knative cluster.
 
-At this point you have installed the GitLab Eventing source in your Knative cluster. Check that the manager is running with:
+3. Check that the manager is running:
 
-```shell
-kubectl get pods -n gitlabsource-system
-NAME                                READY     STATUS    RESTARTS   AGE
-gitlabsource-controller-manager-0   2/2       Running   0          27s
-```
+    ```shell
+    kubectl get pods -n gitlabsource-system
+    ```
 
-With the controller running you can now move on to a user persona and setup a GitLab webhook as well as a function that will consume GitLab events.
+    Output:
+
+    ```shell
+    NAME                                READY     STATUS    RESTARTS   AGE
+    gitlabsource-controller-manager-0   2/2       Running   0          27s
+    ```
+
+    With the controller running you can now move on to a user persona and setup a GitLab webhook as well as a function that will consume GitLab events.
 
 ## Using the GitLab Event Source
 
-You are now ready to use the Source and trigger functions based on GitLab projects events.
+You are now ready to use the Event Source and trigger functions based on GitLab projects events.
 
 We will:
 
@@ -62,10 +70,9 @@ We will:
 
 ### Create a Knative Service
 
-Create a simple Knative `Service` that dumps incoming messages to its log. The `service.yaml` file
-defines this basic service.
-
-This service will receive the GitLab event that you will configure in the GitLabSource object.
+Create a simple Knative `service` that dumps incoming messages to its log. The `service` .yaml file
+defines this basic service which will receive the configured GitLab event from the GitLabSource object. 
+The contents of the `service` .yaml file are as follows:
 
 ```yaml
 apiVersion: serving.knative.dev/v1alpha1
@@ -89,85 +96,94 @@ kubectl -n default apply -f https://gitlab.com/triggermesh/gitlabsource/raw/mast
 
 ### Create GitLab Tokens
 
-Create a [personal access token](https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html)
-for GitLab that the GitLab source can use to register webhooks with
-the GitLab API. Also decide on a secret token that your code will use
-to authenticate the incoming webhooks from GitLab ([_secretToken_](https://docs.gitlab.com/ee/user/project/integrations/webhooks.html#secret-token)).
+1. Create a [personal access token](https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html)
+which the GitLab source will use to register webhooks with the GitLab API. 
+Also decide on a secret token that your code will use to authenticate the
+incoming webhooks from GitLab ([_secretToken_](https://docs.gitlab.com/ee/user/project/integrations/webhooks.html#secret-token)).
 
-GitLab webhooks can be created and configured with the [Hook API](https://docs.gitlab.com/ee/api/projects.html#hooks)
+    GitLab webhooks can be created and configured with the [Hook API](https://docs.gitlab.com/ee/api/projects.html#hooks)
 
-Here's an example for a token named "knative-test" with the
-recommended scopes:
+    Here's an example for a token named "knative-test" with the
+    recommended scopes:
 
-![GitLab UI](personal_access_token.png "GitLab personal access token screenshot")
+    ![GitLab UI](personal_access_token.png "GitLab personal access token screenshot")
 
-Update `gitlabsecret.yaml` with those values. If your generated access
-token is `'personal_access_token_value'` and you choose your _secretToken_
-as `'asdfasfdsaf'`, you'd modify `gitlabsecret.yaml` like so:
+2. Create a file called `gitlabsecret.yaml` with the following values:
 
-```yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: gitlabsecret
-type: Opaque
-stringData:
-  accessToken: personal_access_token_value
-  secretToken: asdfasfdsaf
-```
+    ```yaml
+    apiVersion: v1
+    kind: Secret
+    metadata:
+      name: gitlabsecret
+    type: Opaque
+    stringData:
+      accessToken: personal_access_token_value
+      secretToken: asdfasfdsaf
+    ```
 
-Hint: you can makeup a random _secretToken_ with:
+    Where `accessToken` is the personal access token created in step 1. and `secretToken` (`asdfasdfas` above) is any token of your choosing.
+    
+    Hint: you can generate a random _secretToken_ with:
 
-```shell
-head -c 8 /dev/urandom | base64
-```
+    ```shell
+    head -c 8 /dev/urandom | base64
+    ```
 
-Then, apply the gitlabsecret using `kubectl`:
+3. Apply the gitlabsecret using `kubectl`.
 
-```shell
-kubectl --n default apply -f https://gitlab.com/triggermesh/gitlabsource/raw/master/gitlabsecret.yaml
-```
+    ```shell
+    kubectl --n default apply -f gitlabsecret.yaml
+    ```
 
 ### Create Event Source for GitLab Events
 
-In order to receive GitLab events, you have to create a concrete Event
-Source for a specific namespace. Be sure to replace the
-`ownerAndRepository` value with a valid GitLab public repository owned
-by your GitLab user.
+1. In order to receive GitLab events, you have to create a concrete Event
+Source for a specific namespace. Replace the `ownerAndRepository` value in the file `gitlabeventbinding.yaml`
+  with your GitLab username and project name. For example, if your repo URL is 
+  `https://gitlab.com/knative-examples/functions` then the value for `ownerAndRepository` should be
+  `knative-examples/functions`
 
-```yaml
-apiVersion: sources.eventing.triggermesh.dev/v1alpha1
-kind: GitLabSource
-metadata:
-  name: gitlabsample
-spec:
-  eventTypes:
-    - pull_request
-  ownerAndRepository: <YOUR USER>/<YOUR REPO>
-  accessToken:
-    secretKeyRef:
-      name: gitlabsecret
-      key: accessToken
-  secretToken:
-    secretKeyRef:
-      name: gitlabsecret
-      key: secretToken
-  sink:
-    apiVersion: serving.knative.dev/v1alpha1
-    kind: Service
-    name: gitlab-message-dumper
-```
+    ```yaml
+    apiVersion: sources.eventing.triggermesh.dev/v1alpha1
+    kind: GitLabSource
+    metadata:
+      name: gitlabsample
+    spec:
+      eventTypes:
+        - pull_request
+      ownerAndRepository: <USERSPACE>/<PROJECT NAME>
+      accessToken:
+        secretKeyRef:
+          name: gitlabsecret
+          key: accessToken
+      secretToken:
+        secretKeyRef:
+          name: gitlabsecret
+          key: secretToken
+      sink:
+        apiVersion: serving.knative.dev/v1alpha1
+        kind: Service
+        name: gitlab-message-dumper
+    ```
 
-Then, apply that yaml using `kubectl`:
+2. Apply the yaml file using `kubectl`:
 
-```shell
-kubectl -n default apply -f https://gitlab.com/triggermesh/gitlabsource/raw/master/gitlabeventbinding.yaml
-```
+    2.1. If you cloned this repository use your specific URL where `userspace` below points to your repository:
+
+    ```shell
+    kubectl -n default apply -f https://gitlab.com/<userspace>/gitlabsource/raw/master/gitlabeventbinding.yaml
+    ```
+
+    2.2. If you rather not clone the repo, create a file called `gitlabeventbinding.yaml` with the contents above and apply it:
+
+    ```shell
+    kubectl -n default apply -f gitlabeventbinding.yaml
+    ```
 
 ### Verify
 
 Verify the GitLab webhook was created by looking at the list of
-webhooks under the Settings/Integrations tab in your GitLab repository. A hook
+webhooks under **Settings >> Integrations** in your GitLab project. A hook
 should be listed that points to your Knative cluster.
 
 Create a push event and check the logs of the Pod backing the `message-dumper`. You will see the GitLab event.
