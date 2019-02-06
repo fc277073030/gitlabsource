@@ -1,18 +1,18 @@
 # This file is a template...
 
 stages:
-  - manager
+  - controller
   - receiver
   - manifests
 
 manager:
-  stage: manager
+  stage: controller
   image:
     name: gcr.io/kaniko-project/executor:debug-v0.6.0
     entrypoint: [""]
   script:
     - /busybox/echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_JOB_TOKEN\"}}}" > /kaniko/.docker/config.json
-    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile --destination $CI_REGISTRY_IMAGE/manager:$CI_COMMIT_TAG
+    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile --destination $CI_REGISTRY_IMAGE/controller:$CI_COMMIT_TAG
 
 receiver:
   stage: receiver
