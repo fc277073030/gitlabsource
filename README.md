@@ -138,10 +138,9 @@ incoming webhooks from GitLab ([_secretToken_](https://docs.gitlab.com/ee/user/p
 ### Create Event Source for GitLab Events
 
 1. In order to receive GitLab events, you have to create a concrete Event
-Source for a specific namespace. Replace the `ownerAndRepository` value in the file `gitlabeventbinding.yaml`
+Source for a specific namespace. Replace the `projectUrl` value in the file `gitlabeventbinding.yaml`
   with your GitLab username and project name. For example, if your repo URL is 
-  `https://gitlab.com/knative-examples/functions` then the value for `ownerAndRepository` should be
-  `knative-examples/functions`
+  `https://gitlab.com/knative-examples/functions` then use it as the value for `projectUrl`.
 
     ```yaml
     apiVersion: sources.eventing.triggermesh.dev/v1alpha1
