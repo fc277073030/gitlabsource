@@ -151,7 +151,7 @@ Source for a specific namespace. Replace the `ownerAndRepository` value in the f
     spec:
       eventTypes:
         - pull_request
-      ownerAndRepository: <USERSPACE>/<PROJECT NAME>
+      projectUrl: https://<GITLAB_URL>/<USERSPACE>/<PROJECT NAME>
       accessToken:
         secretKeyRef:
           name: gitlabsecret
