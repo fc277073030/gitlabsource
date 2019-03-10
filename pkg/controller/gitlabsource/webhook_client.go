@@ -82,7 +82,7 @@ func (client gitlabHookClient) Create(baseUrl string, options *projectHookOption
 		PipelineEvents:           &options.PipelineEvents,
 		WikiPageEvents:           &options.WikiPageEvents,
 		Token:                    &options.secretToken,
-		EnableSSLVerification:    &options.EnableSSLVerification,
+		EnableSSLVerification: &options.EnableSSLVerification,
 	}
 
 	hook, _, err := glClient.Projects.AddProjectHook(options.project, &hookOptions, nil)
