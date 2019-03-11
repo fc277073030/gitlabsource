@@ -83,7 +83,7 @@ const (
 )
 
 var gitLabSourceCondSet = duckv1alpha1.NewLivingConditionSet(
-	GitHubSourceConditionSinkProvided)
+	GitLabSourceConditionSinkProvided)
 
 // GitLabSourceStatus defines the observed state of GitLabSource
 type GitLabSourceStatus struct {
