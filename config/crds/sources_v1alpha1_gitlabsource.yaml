@@ -71,7 +71,7 @@ spec:
               items:
                 properties:
                   lastTransitionTime:
-                    type: object
+                    type: string
                   message:
                     type: string
                   reason:
