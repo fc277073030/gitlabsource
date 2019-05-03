@@ -4,8 +4,8 @@ metadata:
   name: gitlabsample
 spec:
   eventTypes:
-    - pull_request
-  ownerAndRepository: <YOUR USER>/<YOUR REPO>
+    - push_events
+  projectUrl: https://gitlab.com/sebgoa/kdemo
   accessToken:
     secretKeyRef:
       name: gitlabsecret
@@ -15,6 +15,6 @@ spec:
       name: gitlabsecret
       key: secretToken
   sink:
-    apiVersion: serving.knative.dev/v1alpha1
-    kind: Service
-    name: gitlab-message-dumper
+    apiVersion: eventing.knative.dev/v1alpha1
+    kind: Channel
+    name: default
