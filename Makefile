@@ -49,7 +49,7 @@ docker-build: test
 
 # Build the recieve adapater image
 docker-build-ra: test
-	docker build . -f Dockerfile.receive_adapter -t ${RA_IMG}
+	docker build . -f Dockerfile.receive-adapter -t ${RA_IMG}
 
 # Push the manager docker image
 docker-push:

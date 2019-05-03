@@ -165,6 +165,8 @@ func getProjectName(projectUrl string) (string, error) {
 
 func (r *ReconcileGitLabSource) reconcile(source *sourcesv1alpha1.GitLabSource) error {
 
+	source.Status.InitializeConditions()
+
 	ctx := context.TODO()
 	hookOptions := projectHookOptions{}
 	projectName, err := getProjectName(source.Spec.ProjectUrl)
@@ -207,6 +209,7 @@ func (r *ReconcileGitLabSource) reconcile(source *sourcesv1alpha1.GitLabSource) 
 
 	uri, err := r.getSinkURI(source.Spec.Sink, source.Namespace)
 	if err != nil {
+		source.Status.MarkNoSink("NotFound", "%s", err)
 		return err
 	}
 	source.Status.MarkSink(uri)

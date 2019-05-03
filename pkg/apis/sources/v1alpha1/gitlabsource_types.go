@@ -17,9 +17,14 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"github.com/knative/pkg/apis/duck"
+	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+// Check that GitLabSource implements the Conditions duck type.
+var _ = duck.VerifyType(&GitLabSource{}, &duckv1alpha1.Conditions{})
 
 // GitLabSourceSpec defines the desired state of GitLabSource
 type GitLabSourceSpec struct {
@@ -67,8 +72,28 @@ type SecretValueFromSource struct {
 	SecretKeyRef *corev1.SecretKeySelector `json:"secretKeyRef,omitempty"`
 }
 
+const (
+	// GitLabSourceConditionReady has status True when the
+	// GitLabSource is ready to send events.
+	GitLabSourceConditionReady = duckv1alpha1.ConditionReady
+
+	// GitLabSourceConditionSinkProvided has status True when the
+	// GitlabbSource has been configured with a sink target.
+	GitLabSourceConditionSinkProvided duckv1alpha1.ConditionType = "SinkProvided"
+)
+
+var gitLabSourceCondSet = duckv1alpha1.NewLivingConditionSet(
+	GitLabSourceConditionSinkProvided)
+
 // GitLabSourceStatus defines the observed state of GitLabSource
 type GitLabSourceStatus struct {
+
+	// Conditions holds the state of a source at a point in time.
+	// +optional
+	// +patchMergeKey=type
+	// +patchStrategy=merge
+	Conditions duckv1alpha1.Conditions `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
+
 	// ID of the project hook registered with GitLab
 	Id string `json:"Id,omitempty"`
 
@@ -78,9 +103,34 @@ type GitLabSourceStatus struct {
 	SinkURI string `json:"sinkUri,omitempty"`
 }
 
-// MarkSink sets the sink fot GitLabSource
+// GetCondition returns the condition currently associated with the given type, or nil.
+func (s *GitLabSourceStatus) GetCondition(t duckv1alpha1.ConditionType) *duckv1alpha1.Condition {
+	return gitLabSourceCondSet.Manage(s).GetCondition(t)
+}
+
+// IsReady returns true if the resource is ready overall.
+func (s *GitLabSourceStatus) IsReady() bool {
+	return gitLabSourceCondSet.Manage(s).IsHappy()
+}
+
+// InitializeConditions sets relevant unset conditions to Unknown state.
+func (s *GitLabSourceStatus) InitializeConditions() {
+	gitLabSourceCondSet.Manage(s).InitializeConditions()
+}
+
+// MarkSink sets the condition that the source has a sink configured.
 func (s *GitLabSourceStatus) MarkSink(uri string) {
 	s.SinkURI = uri
+	if len(uri) > 0 {
+		gitLabSourceCondSet.Manage(s).MarkTrue(GitLabSourceConditionSinkProvided)
+	} else {
+		gitLabSourceCondSet.Manage(s).MarkUnknown(GitLabSourceConditionSinkProvided, "SinkEmpty", "Sink has resolved to empty.")
+	}
+}
+
+// MarkNoSink sets the condition that the source does not have a sink configured.
+func (s *GitLabSourceStatus) MarkNoSink(reason, messageFormat string, messageA ...interface{}) {
+	gitLabSourceCondSet.Manage(s).MarkFalse(GitLabSourceConditionSinkProvided, reason, messageFormat, messageA...)
 }
 
 // +genclient
