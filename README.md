@@ -149,7 +149,9 @@ Source for a specific namespace. Replace the `projectUrl` value in the file `git
       name: gitlabsample
     spec:
       eventTypes:
-        - pull_request
+        - merge_requests_events
+        - push_events
+        - issues_events
       projectUrl: https://<GITLAB_URL>/<USERSPACE>/<PROJECT NAME>
       accessToken:
         secretKeyRef:
