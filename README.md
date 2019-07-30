@@ -23,7 +23,7 @@ You will need to:
 2. Launch the controller and set all the required objects:
 
     ```shell
-    wget -O release.yaml https://gitlab.com/triggermesh/gitlabsource/-/jobs/artifacts/master/raw/release.yaml?job=manifests
+    wget -O release.yaml https://gitlab.com/triggermesh/gitlabsource/-/jobs/262434754/artifacts/file/release.yaml
     kubectl apply -f release.yaml
     ```
 
